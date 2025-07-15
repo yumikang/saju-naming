@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model ChineseCharacter {
+  id              String   @id @default(cuid())
+  character       String   @unique
+  unicode         String
+  strokeCount     Int
+  radical         String?
+  koreanSound     String
+  koreanMeaning   String
+  
+  // 오행 정보
+  primaryElement  String   // 목/화/토/금/수
+  elementStrength Int      @default(50)
+  elementReason   String?
+  
+  // 작명 정보
+  nameSuitability Int      @default(50)
+  genderPreference String  @default("중성")
+  positionPreference String?
+  
+  // 의미 정보
+  meaningCategory String?
+  positiveMeaning String?
+  usageCaution    String?
+  
+  // 수리학 정보
+  numerologyLuck  String?
+  numerologyDesc  String?
+  
+  // 통계
+  usageCount      Int      @default(0)
+  popularityScore Int      @default(50)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  isActive        Boolean  @default(true)
+  
+  @@index([primaryElement])
+  @@index([nameSuitability])
+  @@index([koreanSound])
+  @@index([strokeCount])
+}
+
+model NameCombination {
+  id            String   @id @default(cuid())
+  surname       String
+  firstName     String
+  secondName    String?
+  
+  totalScore    Int
+  elementHarmony Int
+  soundHarmony  Int
+  meaningScore  Int
+  numerologyScore Int
+  
+  analysis      Json
+  
+  // 사용 통계
+  selectionCount Int      @default(0)
+  satisfactionAvg Decimal? @db.Decimal(3,2)
+  
+  createdAt     DateTime @default(now())
+  
+  @@unique([surname, firstName, secondName])
+}
+
+model ElementRule {
+  id          String   @id @default(cuid())
+  ruleType    String   // radical, meaning, sound
+  ruleValue   String
+  element     String   // 목/화/토/금/수
+  priority    Int      @default(50)
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
