@@ -3,7 +3,7 @@ import { Form, useLoaderData } from "@remix-run/react";
 import { getSession, commitSession } from "~/lib/session.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
+  const session = await getSession(request);
   const sajuData = session.get("sajuData");
   
   if (!sajuData) {
@@ -20,7 +20,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const fixedChar1 = formData.get("fixedChar1") as string;
   const fixedChar2 = formData.get("fixedChar2") as string;
 
-  const session = await getSession(request.headers.get("Cookie"));
+  const session = await getSession(request);
   session.set("nameConfig", {
     surname,
     nameLength: parseInt(nameLength),

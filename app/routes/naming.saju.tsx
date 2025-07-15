@@ -24,7 +24,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const sajuData = await calculator.calculateSaju(date, gender);
 
   // 세션에 저장
-  const session = await getSession(request.headers.get("Cookie"));
+  const session = await getSession(request);
   session.set("sajuData", sajuData);
   session.set("birthInfo", { date: birthDate, hour: birthHour, gender });
 

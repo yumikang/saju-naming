@@ -1,4 +1,5 @@
 // 사주 계산 로직 (서버 사이드)
+import { Solar, Lunar } from 'lunar-javascript';
 
 export interface SajuData {
   year: { gan: string; ji: string };
@@ -8,6 +9,12 @@ export interface SajuData {
   elements: Record<string, number>;
   yongsin: { primary: string; secondary: string; helpful?: string };
   dayMaster: string;
+  birthInfo: {
+    solar: string;
+    lunar: string;
+    isLeapMonth: boolean;
+    zodiac: string;
+  };
 }
 
 export interface LunarDate {
@@ -15,6 +22,7 @@ export interface LunarDate {
   month: number;
   day: number;
   isLeapMonth: boolean;
+  zodiac: string;
 }
 
 // 천간지지 상수
@@ -25,11 +33,11 @@ const ELEMENT_MAP = {
   천간: {
     갑: '목', 을: '목', 병: '화', 정: '화', 무: '토',
     기: '토', 경: '금', 신: '금', 임: '수', 계: '수'
-  },
+  } as Record<string, string>,
   지지: {
     자: '수', 축: '토', 인: '목', 묘: '목', 진: '토', 사: '화',
     오: '화', 미: '토', 신: '금', 유: '금', 술: '토', 해: '수'
-  }
+  } as Record<string, string>
 };
 
 const YINYANG_MAP = {
@@ -40,10 +48,13 @@ const YINYANG_MAP = {
 export class SajuCalculator {
   // 사주 계산 메인 함수
   async calculateSaju(birthDate: Date, gender: 'M' | 'F'): Promise<SajuData> {
-    // 1. 년주 계산
-    const yearPillar = this.calculateYearPillar(birthDate);
+    // 0. 음력 변환
+    const lunarDate = this.convertToLunar(birthDate);
     
-    // 2. 월주 계산
+    // 1. 년주 계산 (입춘 기준)
+    const yearPillar = this.calculateYearPillar(birthDate, lunarDate);
+    
+    // 2. 월주 계산 (절기 기준)
     const monthPillar = this.calculateMonthPillar(birthDate, yearPillar.gan);
     
     // 3. 일주 계산 (만세력)
@@ -67,22 +78,47 @@ export class SajuCalculator {
       hour: hourPillar,
       elements,
       yongsin,
-      dayMaster: dayPillar.gan
+      dayMaster: dayPillar.gan,
+      birthInfo: {
+        solar: birthDate.toLocaleDateString('ko-KR'),
+        lunar: `${lunarDate.year}.${lunarDate.month}.${lunarDate.day}${lunarDate.isLeapMonth ? '(윤)' : ''}`,
+        isLeapMonth: lunarDate.isLeapMonth,
+        zodiac: lunarDate.zodiac
+      }
+    };
+  }
+
+  // 음력 변환
+  private convertToLunar(solarDate: Date): LunarDate {
+    const solar = Solar.fromDate(solarDate);
+    const lunar = solar.getLunar();
+    
+    return {
+      year: lunar.getYear(),
+      month: lunar.getMonth(),
+      day: lunar.getDay(),
+      isLeapMonth: lunar.isLeap(),
+      zodiac: lunar.getYearInChinese() // 띠 정보
     };
   }
 
   // 년주 계산 (입춘 기준)
-  private calculateYearPillar(date: Date): { gan: string; ji: string } {
-    let year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+  private calculateYearPillar(solarDate: Date, lunarDate: LunarDate): { gan: string; ji: string } {
+    // 입춘은 양력 기준으로 계산 (보통 2월 4일경)
+    let year = solarDate.getFullYear();
+    const month = solarDate.getMonth() + 1;
+    const day = solarDate.getDate();
     
-    // 입춘 전이면 전년으로 계산 (대략 2월 4일 기준)
-    if (month === 1 || (month === 2 && day < 4)) {
+    // 정확한 입춘일 계산 (간소화된 버전)
+    const lichun = this.getLichunDate(year);
+    const currentDate = new Date(solarDate);
+    
+    // 입춘 전이면 전년으로 계산
+    if (currentDate < lichun) {
       year -= 1;
     }
     
-    // 1984년 갑자년 기준
+    // 1984년 갑자년 기준으로 60갑자 계산
     const diff = year - 1984;
     const ganIdx = ((diff % 10) + 10) % 10;
     const jiIdx = ((diff % 12) + 12) % 12;
@@ -91,6 +127,19 @@ export class SajuCalculator {
       gan: CHEONGAN[ganIdx],
       ji: JIJI[jiIdx]
     };
+  }
+
+  // 입춘일 계산 (간소화된 버전)
+  private getLichunDate(year: number): Date {
+    // 입춘은 보통 2월 3일~5일 사이
+    // 정확한 계산은 복잡하므로 근사치 사용
+    const baseDate = new Date(year, 1, 4); // 2월 4일 기준
+    
+    // 연도별 미세 조정 (실제로는 천문 계산 필요)
+    const dayOffset = Math.floor((year - 2000) / 4) % 3 - 1;
+    baseDate.setDate(baseDate.getDate() + dayOffset);
+    
+    return baseDate;
   }
 
   // 월주 계산 (절기 기준)
@@ -197,20 +246,26 @@ export class SajuCalculator {
 
   // 오행 분석
   private analyzeElements(pillars: Array<{gan: string; ji: string}>): Record<string, number> {
-    const elements = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
+    const elements: Record<string, number> = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
     
     pillars.forEach(pillar => {
       const ganElement = ELEMENT_MAP.천간[pillar.gan];
       const jiElement = ELEMENT_MAP.지지[pillar.ji];
       
-      if (ganElement) elements[ganElement]++;
-      if (jiElement) elements[jiElement]++;
+      if (ganElement && elements[ganElement] !== undefined) {
+        elements[ganElement]++;
+      }
+      if (jiElement && elements[jiElement] !== undefined) {
+        elements[jiElement]++;
+      }
     });
     
     // 백분율로 변환
     const total = Object.values(elements).reduce((a, b) => a + b, 0);
     Object.keys(elements).forEach(key => {
-      elements[key] = Math.round((elements[key] / total) * 100);
+      if (elements[key] !== undefined) {
+        elements[key] = Math.round((elements[key] / total) * 100);
+      }
     });
     
     return elements;
@@ -233,7 +288,7 @@ export class SajuCalculator {
     return {
       primary: yongsin[0],
       secondary: yongsin[1],
-      helpful: sangseang[dayElement]
+      helpful: dayElement ? sangseang[dayElement] : undefined
     };
   }
 }

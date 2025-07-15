@@ -14,7 +14,7 @@ const VALUES = [
 ];
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
+  const session = await getSession(request);
   const sajuData = session.get("sajuData");
   const nameConfig = session.get("nameConfig");
   
@@ -33,7 +33,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "최소 1개 이상의 가치를 선택해주세요" }, { status: 400 });
   }
 
-  const session = await getSession(request.headers.get("Cookie"));
+  const session = await getSession(request);
   session.set("selectedValues", values);
 
   return redirect("/naming/results", {

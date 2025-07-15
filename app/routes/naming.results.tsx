@@ -4,7 +4,7 @@ import { getSession } from "~/lib/session.server";
 import { NameGenerator } from "~/lib/naming.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
+  const session = await getSession(request);
   const sajuData = session.get("sajuData");
   const nameConfig = session.get("nameConfig");
   const selectedValues = session.get("selectedValues");
@@ -36,19 +36,66 @@ export default function NamingResults() {
   
   return (
     <div className="max-w-4xl mx-auto">
-      {/* 사주 분석 요약 */}
+      {/* 출생 정보 및 사주 분석 요약 */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-2xl font-bold mb-4">사주 분석 결과</h2>
-        <div className="grid grid-cols-5 gap-4">
-          {Object.entries(sajuData.elements).map(([element, percentage]) => (
-            <div key={element} className="text-center">
-              <div className="text-3xl mb-2">{getElementEmoji(element)}</div>
-              <div className="font-medium">{element}</div>
-              <div className="text-sm text-gray-600">{percentage}%</div>
+        
+        {/* 출생 정보 */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-gray-600">양력:</span> {sajuData.birthInfo.solar}
             </div>
-          ))}
+            <div>
+              <span className="text-gray-600">음력:</span> {sajuData.birthInfo.lunar}
+            </div>
+            <div>
+              <span className="text-gray-600">띠:</span> {sajuData.birthInfo.zodiac}
+            </div>
+            <div>
+              <span className="text-gray-600">일간:</span> {sajuData.dayMaster}
+            </div>
+          </div>
         </div>
-        <div className="mt-4 p-4 bg-blue-50 rounded">
+
+        {/* 사주팔자 */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">사주팔자</h3>
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div className="p-3 bg-blue-50 rounded">
+              <div className="text-sm text-gray-600">년주</div>
+              <div className="font-bold">{sajuData.year.gan}{sajuData.year.ji}</div>
+            </div>
+            <div className="p-3 bg-green-50 rounded">
+              <div className="text-sm text-gray-600">월주</div>
+              <div className="font-bold">{sajuData.month.gan}{sajuData.month.ji}</div>
+            </div>
+            <div className="p-3 bg-yellow-50 rounded">
+              <div className="text-sm text-gray-600">일주</div>
+              <div className="font-bold">{sajuData.day.gan}{sajuData.day.ji}</div>
+            </div>
+            <div className="p-3 bg-purple-50 rounded">
+              <div className="text-sm text-gray-600">시주</div>
+              <div className="font-bold">{sajuData.hour.gan}{sajuData.hour.ji}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 오행 분포 */}
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-3">오행 분포</h3>
+          <div className="grid grid-cols-5 gap-4">
+            {Object.entries(sajuData.elements).map(([element, percentage]) => (
+              <div key={element} className="text-center">
+                <div className="text-3xl mb-2">{getElementEmoji(element)}</div>
+                <div className="font-medium">{element}</div>
+                <div className="text-sm text-gray-600">{percentage}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4 bg-blue-50 rounded">
           <p className="text-sm">
             <strong>보완 필요 오행:</strong>{" "}
             <span className="text-blue-700 font-medium">

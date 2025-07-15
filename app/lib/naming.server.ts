@@ -177,7 +177,7 @@ export class NameGenerator {
       value: this.calculateValueScore(chars, charMap, values)
     };
     
-    scores.total = Math.round(
+    const totalScore = Math.round(
       scores.element * 0.3 +
       scores.sound * 0.2 +
       scores.meaning * 0.2 +
@@ -200,7 +200,10 @@ export class NameGenerator {
           sound: info.koreanSound
         };
       }),
-      scores,
+      scores: {
+        ...scores,
+        total: totalScore
+      },
       analysis
     };
   }
@@ -226,7 +229,7 @@ export class NameGenerator {
     });
     
     // 상생 관계 체크
-    const elements = chars.map(c => charMap.get(c)?.primaryElement).filter(Boolean);
+    const elements = chars.map(c => charMap.get(c)?.primaryElement).filter((el): el is string => Boolean(el));
     if (this.checkSangSeang(elements)) {
       score += 10;
     }
@@ -242,7 +245,7 @@ export class NameGenerator {
     let score = 80;
     
     // 발음 조화 체크
-    const sounds = [surname, ...chars.map(c => charMap.get(c)?.koreanSound)].filter(Boolean);
+    const sounds = [surname, ...chars.map(c => charMap.get(c)?.koreanSound)].filter((sound): sound is string => Boolean(sound));
     
     // 같은 발음 반복 감점
     const soundSet = new Set(sounds);
