@@ -8,8 +8,6 @@
   "buildCommand": "npm run build", 
   "devCommand": "npm run dev",
   "outputDirectory": "build/client",
-  "serverless": true,
-  "regions": ["iad1"],
   "rewrites": [
     {
       "source": "/(.*)",
