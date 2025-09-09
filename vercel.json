@@ -8,15 +8,12 @@
   "buildCommand": "npm run build", 
   "devCommand": "npm run dev",
   "outputDirectory": "build/client",
-  "functions": {
-    "build/server/index.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
+  "serverless": true,
+  "regions": ["iad1"],
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/build/server/index.js"
+      "destination": "/api/remix"
     }
   ]
 }
