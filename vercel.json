@@ -1,17 +1,1 @@
-{
-  "build": {
-    "env": {
-      "ENABLE_VC_BUILD": "1"
-    }
-  },
-  "installCommand": "npm install",
-  "buildCommand": "npm run build", 
-  "devCommand": "npm run dev",
-  "outputDirectory": "build/client",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/remix"
-    }
-  ]
-}
+{}
